@@ -1,16 +1,16 @@
 package com.driver.services.impl;
 
-import com.driver.model.*;
+import com.driver.model.TripBooking;
+import com.driver.model.TripStatus;
 import com.driver.services.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.driver.model.Customer;
+import com.driver.model.Driver;
 import com.driver.repository.CustomerRepository;
 import com.driver.repository.DriverRepository;
 import com.driver.repository.TripBookingRepository;
-
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,30 +42,29 @@ public class CustomerServiceImpl implements CustomerService {
 	public TripBooking bookTrip(int customerId, String fromLocation, String toLocation, int distanceInKm) throws Exception{
 		//Book the driver with lowest driverId who is free (cab available variable is Boolean.TRUE). If no driver is available, throw "No cab available!" exception
 		//Avoid using SQL query
-		List<Driver>driverList=driverRepository2.findAll();
-		//then sort according to driverId
-		Collections.sort(driverList,(a,b)->a.getDriverId()- b.getDriverId());
-		Driver driver=null;
-		for(Driver d:driverList)
-		{
-			if(d.getCab().getAvailable())
-			{
-				driver=d;
+		List<Driver> driverList=driverRepository2.findAll();
+		Collections.sort(driverList,(a,b)->{
+			return a.getDriverId()-b.getDriverId();
+		});
+		Driver d=null;
+		for(Driver driver:driverList){
+			if(driver.getCab().getAvailable()){
+				d=driver;
+				break;
 			}
 		}
-		if(driver==null)
-		{
+		if(d==null){
 			throw new Exception("No cab available!");
 		}
-		//so if  driver is not  then we found drive change cab status create trip obj and set  relevant attribute
 		Customer customer=customerRepository2.findById(customerId).get();
-		Cab cab=driver.getCab();
-		cab.setAvailable(Boolean.FALSE);
-		driver.setCab(cab);
-		int bill=cab.getPerKmRate()*distanceInKm;
-		TripBooking tripBooking=new TripBooking(fromLocation,toLocation,distanceInKm,TripStatus.CONFIRMED,bill);
-		tripBooking.setCustomer(customer);
-		tripBooking.setDriver(driver);
+		int bill=d.getCab().getPerKmRate()*distanceInKm;
+		TripBooking tripBooking=new TripBooking(fromLocation,toLocation,distanceInKm, TripStatus.CONFIRMED,bill,d,customer);
+		d.getCab().setAvailable(false);
+		d.getTripBookingList().add(tripBooking);
+		driverRepository2.save(d);
+
+		customer.getTripBookingList().add(tripBooking);
+		customerRepository2.save(customer);
 		tripBookingRepository2.save(tripBooking);
 		return tripBooking;
 	}
@@ -74,7 +73,7 @@ public class CustomerServiceImpl implements CustomerService {
 	public void cancelTrip(Integer tripId){
 		//Cancel the trip having given trip Id and update TripBooking attributes accordingly
 		TripBooking tripBooking=tripBookingRepository2.findById(tripId).get();
-		tripBooking.setTripStatus(TripStatus.CANCELED);
+		tripBooking.setStatus(TripStatus.CANCELED);
 		tripBooking.setBill(0);
 		Driver driver=tripBooking.getDriver();
 		driver.getCab().setAvailable(true);
@@ -86,7 +85,7 @@ public class CustomerServiceImpl implements CustomerService {
 	public void completeTrip(Integer tripId){
 		//Complete the trip having given trip Id and update TripBooking attributes accordingly
 		TripBooking tripBooking=tripBookingRepository2.findById(tripId).get();
-		tripBooking.setTripStatus(TripStatus.COMPLETED);
+		tripBooking.setStatus(TripStatus.COMPLETED);
 		Driver driver=tripBooking.getDriver();
 		driver.getCab().setAvailable(true);
 		driverRepository2.save(driver);

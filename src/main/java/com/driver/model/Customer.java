@@ -6,24 +6,24 @@ import java.util.List;
 
 @Entity
 @Table(name = "customer")
-public class Customer{
+public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer customerId;
+
     private String mobile;
+
     private String password;
 
-    @OneToMany(mappedBy = "customer",cascade = CascadeType.ALL)
-    private List<TripBooking> bookingList=new ArrayList<>();
-
-
-    public Customer (){
-
-    }
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
+    private List<TripBooking> tripBookingList = new ArrayList<>();
 
     public Customer(String mobile, String password) {
         this.mobile = mobile;
         this.password = password;
+    }
+
+    public Customer() {
     }
 
     public Integer getCustomerId() {
@@ -48,5 +48,13 @@ public class Customer{
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public List<TripBooking> getTripBookingList() {
+        return tripBookingList;
+    }
+
+    public void setTripBOokingList(List<TripBooking> tripBOokingList) {
+        this.tripBookingList = tripBOokingList;
     }
 }
