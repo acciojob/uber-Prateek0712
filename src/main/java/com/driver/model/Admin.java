@@ -1,4 +1,4 @@
-package com.driver.model
+package com.driver.model;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
